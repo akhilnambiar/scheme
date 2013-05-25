@@ -1,0 +1,188 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf370
+{\fonttbl\f0\fnil\fcharset0 GillSans;\f1\fmodern\fcharset0 Courier;\f2\froman\fcharset0 BookAntiqua;
+}
+{\colortbl;\red255\green255\blue255;\red26\green26\blue26;\red56\green110\blue165;\red38\green38\blue38;
+}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid1\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}}
+\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\sa240
+
+\f0\fs32 \cf2 In this project, you will develop an interpreter for a (slightly modified) subset of the Scheme language. As you proceed, think about the issues that arise in the design of a programming language; many quirks of languages are the byproduct of implementation decisions in interpreters and compilers.\
+You will also implement some small programs in Scheme, including the 
+\f1\fs26 count_change
+\f0\fs32  function that we studied in lecture. Scheme is a simple but powerful functional language. You should find that much of what you have learned about Python transfers cleanly to Scheme as well as to other programming languages. To learn more about Scheme, you can read {\field{\*\fldinst{HYPERLINK "http://www.eecs.berkeley.edu/~bh/ss-toc2.html"}}{\fldrslt \cf3 \ul \ulc3 Brian Harvey and Matthew Wright's 
+\i \ulnone Simply Scheme
+\i0 \ul  textbook}} online for free.\
+\
+Before you begin working on the project, review what you have learned in lecture about the {\field{\*\fldinst{HYPERLINK "http://inst.eecs.berkeley.edu/~cs61a/sp12/book/interpretation.html#scheme-language"}}{\fldrslt \cf3 \ul \ulc3 Scheme language}}. If you would like to experiment with a working Scheme interpreter, look at {\field{\*\fldinst{HYPERLINK "http://inst.eecs.berkeley.edu/~scheme"}}{\fldrslt \cf3 \ul \ulc3 Stk}}, which is installed on instructional machines as 
+\f1\fs26 stk
+\f0\fs32 .\
+We've implemented some standard Scheme procedures in Scheme, and you can look at these for examples. They are in the file {\field{\*\fldinst{HYPERLINK "http://www-inst.eecs.berkeley.edu/~cs61a/sp12/projects/scheme/scheme_prelude.scm"}}{\fldrslt 
+\f1\fs26 \cf3 \ul \ulc3 scheme_prelude.scm}}. (The term 
+\i \cf2 standard prelude
+\i0 \cf2  refers to any such collection of definitions that is (at least in effect) executed to establish standard definitions before any program is run.)\
+\pard\pardeftab720\sa240
+
+\b \cf2 Read-Eval-Print.
+\b0 \cf2  Run interactively, our interpreter reads Scheme expressions from the terminal (the standard input, to be precise), evaluates them, and prints the results. Our interpreter uses 
+\f1\fs26 scm>
+\f0\fs32  as the prompt.
+\f1\fs26 \
+  scm> 2\
+  2\
+\pard\pardeftab720\sa240
+
+\f0\fs32 \cf2 The starter code for your Scheme interpreter in {\field{\*\fldinst{HYPERLINK "http://www-inst.eecs.berkeley.edu/~cs61a/sp12/projects/scheme/scheme.py.html"}}{\fldrslt 
+\f1\fs26 \cf3 \ul \ulc3 scheme.py}} can successfully evaluate this simple expression, since it consists of a single literal numeral. The rest of the examples in this section 
+\i \cf2 will not
+\i0 \cf2  work until you complete various portions of the project.\
+Certain expressions are given no specified value in the Scheme standard. The STk interpreter (annoyingly, in my opinion) prints 
+\f1\fs26 okay
+\f0\fs32  for some of these and prints various random things for others (for example, it prints the symbol just defined as the value of the 
+\f1\fs26 define
+\f0\fs32  expression.) Our interpreter, by contrast, returns a special value (called 
+\f1\fs26 UNSPEC
+\f0\fs32  in the Python code) that the read-eval-print loop does not print (likewise, our Python interpreter does not print 
+\f1\fs26 None
+\f0\fs32 ; however 
+\f1\fs26 UNSPEC
+\f0\fs32  is not intended to be used in programs, unlike 
+\f1\fs26 None
+\f0\fs32 .)\
+\pard\pardeftab720\sa240
+
+\b \cf2 Non-standard Symbols.
+\b0 \cf2  Our Scheme subset does not have strings. Instead, we use Scheme symbols for this purpose. Officially, symbols in Scheme need only support a limited set of characters. For example, whitespace, parentheses, and apostrophes are not part of this set, for the obvious reason that they have other lexical significance as delimiters in Scheme. However, Scheme dialects are allowed to introduce various extensions that allow extended symbols containing arbitrary characters. In our dialect, you can create non-standard symbols using "|" (vertical bar) as the quotation character. Within such symbols, you can use the standard Python backslash-escapes, with the addition of 
+\f1\fs26 \\|
+\f0\fs32 , which is how one includes a vertical bar in a non-standard symbol. When printed using the standard Scheme function 
+\f1\fs26 display
+\f0\fs32 , the symbols are printed without the quotes and with the escape sequences translated. For example,
+\f1\fs26 \
+   scm> '(|ALLCAPS| |a string| |two\\nlines| |\\|x\\||)\
+   (|ALLCAPS| |a string| |two\\nlines| |\\|x\\||)\
+   scm> (begin (display '(|ALLCAPS| |a string| |two\\nlines| |\\|x\\||)) (newline))\
+   (ALLCAPS a string two\
+   lines |x|)\
+
+\f0\b\fs32 \cf2 Non-standard Functions.
+\b0 \cf2 \
+
+\b \cf2 Load.
+\b0 \cf2  Our 
+\f1\fs26 load
+\f0\fs32  function differs from standard Scheme in that, since we don't have strings, we use a symbol for the file name. For example
+\f1\fs26 \
+   scm> (load 'mytests.scm)\
+   scm> (load '|filename with blanks.scm|)\
+
+\f0\b\fs32 \cf2 Exiting.
+\b0 \cf2  The functions 
+\f1\fs26 bye
+\f0\fs32  or 
+\f1\fs26 exit
+\f0\fs32  terminate the interpreter. They allow an extra numeric argument giving the Unix exit code (0 for normal exit, non-zero otherwise).\
+
+\b \cf2 Words and Sentences.
+\b0 \cf2  Mostly for the heck of it, we've added a number of functions from the Simply Scheme extensions used in courses at Berkeley. Specifically:\
+\pard\tx220\tx720\pardeftab720\li720\fi-720
+\ls1\ilvl0
+\f1\fs26 \cf2 {\listtext	\'95	}(sentence A B ...)
+\f0\fs32  concatenates lists, but also allows symbols and numbers as arguments, treating these as one-element lists.\
+\ls1\ilvl0
+\f1\fs26 {\listtext	\'95	}(word A B ...)
+\f0\fs32  concatenates the string representations of the symbols and numbers A, B, etc. into a new symbol or number.\
+\ls1\ilvl0
+\f1\fs26 {\listtext	\'95	}(first A)
+\f0\fs32  the first item in (
+\f1\fs26 car
+\f0\fs32  of) A if it a list, or a symbol or number consisting of the first character in A's representation, if A is symbol or number.\
+\ls1\ilvl0
+\f1\fs26 {\listtext	\'95	}(last A)
+\f0\fs32  the last item in A if it a list, or a symbol or number consisting of the last character in A's representation, if A is symbol or number.\
+\ls1\ilvl0
+\f1\fs26 {\listtext	\'95	}(butfirst A)
+\f0\fs32  if A is a list, its 
+\f1\fs26 cdr
+\f0\fs32 , and otherwise if it is a symbol or number, the symbol or number consisting of all but the first character in A's repreentation (abbreviation: 
+\f1\fs26 bf
+\f0\fs32 )\
+\ls1\ilvl0
+\f1\fs26 {\listtext	\'95	}(butlast A)
+\f0\fs32  if A is a list, the list consisting of all but its last element, and otherwise if it is a symbol or number, the symbol or number consisting of all but the last character in A's repreentation (abbreviation: 
+\f1\fs26 bl
+\f0\fs32 ).\
+\pard\pardeftab720
+\cf2 For example,
+\f1\fs26 \
+   scm> (sentence 'a 'b '(c d) '() '(e))\
+   (a b c d e)\
+   scm> (first 'abc)\
+   a\
+   scm> (last 'abc)\
+   c\
+   scm> (bf 'abc)\
+   bc\
+   scm> (bl 'abc)\
+   ab\
+   scm> (first '(1 2 3))\
+   1\
+   scm> (bf '(1 2 3))\
+   (2 3)\
+   scm> (last '(1 2 3))\
+   3\
+   scm> (bl '(1 2 3))\
+   (1 2)\
+\pard\pardeftab720\sa240
+
+\f0\b\fs32 \cf2 Turtle Graphics.
+\b0 \cf2  Finally, to keep up the traditions of recent years, we've added some simple routines for \cf3 \ul \ulc3 turtle graphics\cf2 \ulnone , described later, that simply call functions in the Python 
+\f1\fs26 turtle
+\f0\fs32  package (whose {\field{\*\fldinst{HYPERLINK "http://docs.python.org/py3k/library/turtle.html"}}{\fldrslt \cf3 \ul documentation}} we suggest you see; for one thing, it will let you try out turtle-graphics programs in Python).\
+\pard\pardeftab720
+
+\f2\b\fs44 \cf4 Testing\
+\pard\pardeftab720\sa240
+
+\f0\b0\fs32 \cf2 This time, we're letting you come up with tests. As you complete each problem, add tests to the file 
+\f1\fs26 tests.scm
+\f0\fs32  of the constructs you have implemented. expressions that you can examine and test to become more familiar with the language. Each line that prints output is followed by the expected result as a comment.\
+You can run all commands in a file using your Scheme interpreter by passing the file name as an argument to {\field{\*\fldinst{HYPERLINK "http://www-inst.eecs.berkeley.edu/~cs61a/sp12/projects/scheme/scheme.py.html"}}{\fldrslt 
+\f1\fs26 \cf3 \ul scheme.py}}.
+\f1\fs26 \
+  # python3 scheme.py tests.scm\
+\pard\pardeftab720
+
+\f0\fs32 \cf2 You can also compare the output of your interpreter to the expected output by passing the file name to {\field{\*\fldinst{HYPERLINK "http://www-inst.eecs.berkeley.edu/~cs61a/sp12/projects/scheme/scheme_test.py.html"}}{\fldrslt 
+\f1\fs26 \cf3 \ul scheme_test.py}}.
+\f1\fs26 \
+  # python3 scheme_test.py tests.scm\
+
+\f0\fs32 This is a rather useful script (we used it in developing this project and its solution, for example). As you'll see, 
+\f1\fs26 tests.scm
+\f0\fs32  contains Scheme expressions interspersed with comments in the form
+\f1\fs26 \
+   ; expect 3\
+
+\f0\fs32 The 
+\f1\fs26 scheme_test
+\f0\fs32  script collects these expected outputs and compares them with the actual output from the program, counting and reporting mismatches.\
+You can even test that your interpreter catches errors. The problem with error tests is that there is no "right" output. Our script, therefore, only requires that error messages start with "
+\f1\fs26 Error
+\f0\fs32 ". Any such line will match
+\f1\fs26 \
+  ; expect Error\
+
+\f0\fs32 There's an example in the initial 
+\f1\fs26 tests.scm
+\f0\fs32  file.\
+Don't forget to use the 
+\f1\fs26 trace
+\f0\fs32  decorator from the 
+\f1\fs26 ucb
+\f0\fs32  module to follow the path of execution in your interpreter.\
+As you develop your Scheme interpreter, you may find that Python raises various uncaught exceptions when evaluating Scheme expressions. As a result, your Scheme interpreter will crash. Some of these may be the results of bugs in your program, and some may be useful indications of errors in user programs. The former should be fixed (of course!) and the latter should be caught and changed into 
+\f1\fs26 SchemeError
+\f0\fs32  exceptions, which are caught and printed as error messages by the Scheme read-eval-print loop we've written for you. Python exceptions that "leak out" to the user in raw form are errors in your interpreter (tracebacks are for implementors, not civilians).\
+}
